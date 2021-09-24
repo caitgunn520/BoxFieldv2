@@ -22,8 +22,15 @@ namespace BoxField
         int xLeft = 250;
         int gap = 300;
 
+        //pattern values
+        bool moveRight = true;
+        int patternLength = 10;
+        int xChange = 20;
+
         int newBoxCounter = 0;
 
+        //hero values
+        Box hero;
 
         Random randGen = new Random();
 
@@ -40,6 +47,8 @@ namespace BoxField
         {
             CreateBox(xLeft);
             CreateBox(xLeft + gap);
+
+            hero = new Box(this.Width/2, this.Height - 100, 30, 4, new SolidBrush(Color.Goldenrod));
         }
 
         public void CreateBox(int x)
@@ -61,7 +70,7 @@ namespace BoxField
             }
 
             //Box(x, y, size, speed, brush)
-            Box b = new Box(x, 0, 50, 10, boxBrush);
+            Box b = new Box(x, 0, 30, 10, boxBrush);
             boxes.Add(b);
         }
 
@@ -75,37 +84,84 @@ namespace BoxField
                     break;
                 case Keys.Right:
                     rightArrowDown = true;
-                    break;           
+                    break;
             }
         }
-
+        
+        private void GameScreen_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Left:
+                    leftArrowDown = false;
+                    break;
+                case Keys.Right:
+                    rightArrowDown = false;
+                    break;
+            }
+        }
 
         private void gameLoop_Tick(object sender, EventArgs e)
         {
             newBoxCounter++;
 
+            //move hero
+            if(leftArrowDown)
+            {
+                hero.Move("left");
+            }
+            if(rightArrowDown)
+            {
+                hero.Move("right");
+            }
+
             //update location of all boxes (drop down screen)
             foreach (Box b in boxes)
             {
-                b.y += b.speed;
+                b.Move();
             }
 
             //remove box if it has gone of screen
-            if (boxes[0].y > 200)
+            if (boxes[0].y > this.Height)
             {
                 boxes.RemoveAt(0);   
             }
 
             //add new box if it is time
-            if (newBoxCounter == 10)
+            if (newBoxCounter == 6)
             {
+                if(moveRight == true)
+                {
+                    xLeft += xChange;
+                }
+                else
+                {
+                    xLeft -= xChange;
+                }
+
                 CreateBox(xLeft);
                 CreateBox(xLeft + gap);
+
+                patternLength--;
+
+                if(patternLength == 0)
+                {
+                    moveRight = !moveRight;
+                    patternLength = randGen.Next(5, 20);
+                    xChange = randGen.Next(5, 20);
+                }
 
                 newBoxCounter = 0;
             }
 
-            Refresh();
+            //check for collisions between hero and boxes
+            foreach (Box b in boxes)
+            {
+                if (hero.Collision(b))
+                {
+                    gameLoop.Enabled = false;
+                }
+            }
         }
 
         private void GameScreen_Paint(object sender, PaintEventArgs e)
@@ -115,6 +171,8 @@ namespace BoxField
             {
                 e.Graphics.FillRectangle(b.brushColour, b.x, b.y, b.size, b.size);          
             }
+
+            e.Graphics.FillRectangle(hero.brushColour, hero.x, hero.y, hero.size, hero.size);
         }
     }
 }
